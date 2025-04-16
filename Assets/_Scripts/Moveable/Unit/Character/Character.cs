@@ -1,24 +1,29 @@
-using Unity.VisualScripting;
+using System.Collections;
 using UnityEngine;
-using static UnityEngine.RuleTile.TilingRuleOutput;
 
 public class Character : Unit
 {
     [SerializeField]
-    private CharacterStats CharacterStats;
+    protected CharacterStats CharacterStats;
     public virtual void SetCharacterStats(CharacterStats characterStats)
     {
         CharacterStats = characterStats;
     }
-    public override void Fall(HexTile tile)
+
+    public override void Fall(FallArg fallArg)
     {
-        BeforeFall.Invoke(this);
+        if (fallArg.FALLING == this && _unitStats.Alive)
+        {
+            StartCoroutine(FallAndDisable());
+        }
+    }
 
-        StartCoroutine(MoveToPosition(new Vector3(transform.position.x, -7, 8), 1f));
-        UnitStats.Alive = false;
-        Debug.Log("Character is out of bounds.");
+    public override IEnumerator FallAndDisable()
+    {
+        _unitStats.Alive = false;
+        yield return Helper.MoveToPosition(transform, new Vector3(transform.position.x, -20, -10), 1f);
+        Debug.Log("Michi fell out of bounds.");
         gameObject.SetActive(false);
-
-        AfterFall.Invoke(this);
+        UnitManager.instance.RemoveCharacter(this);
     }
 }

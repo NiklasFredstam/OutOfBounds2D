@@ -1,62 +1,22 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
-using UnityEngine.InputSystem.LowLevel;
+using UnityEngine.SceneManagement;
 
 public class GameManager : Singleton<GameManager>
 {
-    public static Event<GameState> OnBeforeStateChanged = new Event<GameState>();
-    public static Event<GameState> OnAfterStateChanged = new Event<GameState>();
-
+    public static Action<GameState> OnBeforeGameStateChanged;
+    public static Action<GameState> OnAfterGameStateChanged;
     public GameState State { get; private set; }
 
-    void Start() => ChangeState(GameState.Starting);
-
-
-    //Start turnmanager
-    
-    public Unit GetNextTurnUnit()
+    void Start()
     {
-        return CharacterManager.instance.GetLivingUnits()[0];
-    }
-
-    //End turnmanager
-
-    public void ActionTileSelect(HexTile tile)
-    {
-        //Unsubscribe so it can't happen twice
-        //Might even need fast click protection.
-        InputManager.OnTileClick.Unsubscribe(ActionTileSelect);
-        Unit unit = GetNextTurnUnit();
-        //If it's a unit move
-
-        //If its target ability
-
-        //If its a attack tile
-
-
-        switch (State)
-        {
-            case GameState.AttackTileSelect:
-                unit.OnDealDamage.Subscribe(tile.TakeDamage);
-                unit.DealDamage();
-                unit.OnDealDamage.Unsubscribe(tile.TakeDamage);
-                break;
-            case GameState.MoveToTileSelect:
-                GridManager.instance.MoveMoveableToHex(unit, tile);
-                break;
-            default:
-                break;
-        }
-
-        ChangeState(State == GameState.AttackTileSelect ? GameState.MoveToTileSelect : GameState.AttackTileSelect);
-
+        ChangeState(GameState.Starting);
     }
 
     public void ChangeState(GameState newState)
     {
-        OnBeforeStateChanged.Invoke(newState);
+        OnBeforeGameStateChanged?.Invoke(newState);
+        Debug.Log($"The gamestate is now : {newState}");
 
         State = newState;
         switch (State)
@@ -70,34 +30,38 @@ public class GameManager : Singleton<GameManager>
             case GameState.SpawnCharacters:
                 HandleSpawnCharacters();
                 break;
-            case GameState.CreateUI:
-                HandleCreateUI();
+            case GameState.GameStart:
+                ChangeState(GameState.GameTurnStart);
                 break;
-            case GameState.NextTurn:
-                ExecuteTurn();
+            case GameState.GameTurnStart:
+                ChangeState(GameState.UnitTurnStart);
                 break;
-            case GameState.AttackTileSelect:
-                InputManager.OnTileClick.Subscribe(ActionTileSelect);
+            case GameState.UnitTurnStart:
+                HandleUnitTurnStart();
                 break;
-            case GameState.MoveToTileSelect:
-                InputManager.OnTileClick.Subscribe(ActionTileSelect);
+            case GameState.UnitTurnEnd:
+                HandleUnitTurnEnd();
+                break;
+            case GameState.GameTurnEnd:
+                ChangeState(GameState.GameTurnStart);
                 break;
             case GameState.GameOver:
+                Debug.Log("The game is over, resetting the game");
+                SceneManager.LoadScene("Game");
+                EventManager.instance.ClearGameEvents();
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(newState), newState, null);
         }
 
-        OnAfterStateChanged.Invoke(newState);
-
-        Debug.Log($"The state is now: {newState}");
+        OnAfterGameStateChanged?.Invoke(newState);
     }
 
 
     private void HandleStarting()
     {
-        //Setup whatever
-
+        OnBeforeGameStateChanged += TurnManager.instance.OnBeforeGameStateChanged;
+        EventManager.instance.GE_Fall.SubscribeAfter(CheckGameOver);
         ChangeState(GameState.SpawnHexGrid);
     }
 
@@ -111,36 +75,49 @@ public class GameManager : Singleton<GameManager>
     private void HandleSpawnCharacters()
     {
         //Setup units
-        CharacterManager.instance.SpawnCharacters();
-        ChangeState(GameState.AttackTileSelect);
+        UnitManager.instance.SpawnCharacters();
+        ChangeState(GameState.GameStart);
     }
 
-    private void HandleCreateUI()
+    private void HandleUnitTurnEnd() 
     {
-
+        InputManager.instance.ClearCurrentSelections();
+        Debug.Log($"All Players have taken their turn? {TurnManager.instance.IsGameTurnOver()}");
+        if (TurnManager.instance.IsGameTurnOver())
+        {
+            ChangeState(GameState.GameTurnEnd);
+        }
+        else
+        {
+            ChangeState(GameState.UnitTurnStart);
+        }
     }
 
-    private void HandleTurnEnd() 
+    private void HandleUnitTurnStart()
     {
-        if (IsGameOver())
+        InputManager.instance.SetUIAbilities(TurnManager.instance.GetCurrentTurnUnit());
+    }
+
+    public void CheckGameOver(FallArg arg)
+    {
+        if (Helper.GetLivingUnits(UnitManager.instance.GetAllUnits()).Count == 0)
         {
             ChangeState(GameState.GameOver);
         }
     }
 
-    private void ExecuteTurn()
-    {
-        ChangeState(GameState.AttackTileSelect);
-        //Wait for input
-        //Execute Input
-        //Check game over
-        //otherwise ChangeState(NextTurn)
 
-        //I
-    }
 
-    private bool IsGameOver()
+    public void ExecuteSelectedAbility()
     {
-        return CharacterManager.instance.GetLivingUnits().Count == 0;
+        Ability abilityToExecute = InputManager.instance.GetSelectedAbility();
+        GameObject target = InputManager.instance.GetSelectedObject();
+        Unit currentUnitTurn = TurnManager.instance.GetCurrentTurnUnit();
+        if (target != null && abilityToExecute != null)
+        {
+            InputManager.instance.SetSelectedAbility(null);
+            abilityToExecute.QueueAbility(currentUnitTurn, target);
+            ChangeState(GameState.UnitTurnEnd);
+        }
     }
 }

@@ -20,9 +20,11 @@ MonoBehaviour:
     Strength: 4
     Movement: 3
     DestructivePower: 1
+    DamageDealt: 0
   _moveableStats:
     Weight: 4
   Prefab: {fileID: 4492391834151395250, guid: a5827c171790d404aaf068df9ac0a5e1, type: 3}
   Description: Michi The Man
   MenuSprite: {fileID: -9095717837082945937, guid: 207ee8102dd4143d288186ef0be518ee, type: 3}
   CharacterType: 0
+  _abilities: 010000000000000002000000

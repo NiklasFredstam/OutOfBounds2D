@@ -1,6 +1,4 @@
-using System;
-using Unity.VisualScripting.Antlr3.Runtime.Misc;
-using UnityEditor;
+using System.Collections.Generic;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "Character", menuName = "Scriptable Character")]
@@ -24,9 +22,13 @@ public class CharacterScriptable : ScriptableObject
     public string Description;
     public Sprite MenuSprite;
     public CharacterType CharacterType;
+
+    [SerializeField] private List<AbilityType> _abilities;
+    public List<AbilityType> Abilities => _abilities;
 }
 
 public enum CharacterType
 {
-    Michi
+    Michi,
+    Jibblon
 }

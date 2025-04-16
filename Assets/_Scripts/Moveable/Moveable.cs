@@ -1,69 +1,123 @@
 using System.Collections;
 using UnityEngine;
 
-public abstract class Moveable : MonoBehaviour
+public abstract class Moveable : MonoBehaviour, IHovereable, ISelectable
 {
+    protected Color _originalColor;
+    protected SpriteRenderer _spriteRenderer;
+    protected Vector3Int _currentPosition;
+
+    void Awake()
+    {
+        _spriteRenderer = GetComponent<SpriteRenderer>();
+        _originalColor = _spriteRenderer.color;
+    }
+
     [SerializeField]
-    private MoveableStats MoveableStats;
+    protected MoveableStats _moveableStats;
 
-    public Event<Moveable> BeforeFall = new Event<Moveable>();
-    public Event<Moveable> AfterFall = new Event<Moveable>();
-
-
-    public Event<Moveable> BeforeMove = new Event<Moveable>();
-    public Event<Moveable> AfterMove = new Event<Moveable>();
-
-
+    public virtual void SetCurrentPosition(Vector3Int currentPosition)
+    {
+        _currentPosition = currentPosition;
+    }
 
     public virtual void SetMoveableStats(MoveableStats moveableStats)
     {
-        MoveableStats = moveableStats;
+        _moveableStats = moveableStats;
     }
 
 
-    //Only ever move one gridspace?
-    public virtual void Move(Vector3 newPosition)
+    public virtual void Move(MoveArg moveArg)
     {
-        BeforeMove.Invoke(this);
-        StartCoroutine(MoveToPosition(newPosition, 0.5f));
-        AfterMove.Invoke(this);
-    }
-
-    protected IEnumerator MoveToPosition(Vector3 targetPosition, float duration)
-    {
-        Vector3 startPosition = transform.position;
-        float elapsedTime = 0f;
-
-        while (elapsedTime < duration)
+        if (moveArg.SOURCE == this)
         {
-            transform.position = Vector3.Lerp(startPosition, targetPosition, elapsedTime / duration);
-            elapsedTime += Time.deltaTime;
-            yield return null;
+            StartCoroutine(MoveToPosition(moveArg));
+            Debug.Log("Moved");
         }
+    }
 
-        // Ensure the position is exactly the target position at the end
-        transform.position = targetPosition;
+    public virtual IEnumerator MoveToPosition(MoveArg moveArg)
+    {
+        if(moveArg.SOURCE == this)
+        {
+            _currentPosition = moveArg.TARGET.GetCurrentGridPosition();
+            yield return Helper.MoveToPosition(transform, GridManager.instance.GetWorldPositionToPlaceMoveableOnInGrid(moveArg.TARGET.GetCurrentGridPosition()), 0.5f);
+        }
     }
 
     public virtual void Push(int direction, int distance)
     {
-        //Move();
     }
 
     public virtual void Pull(int direction, int distance)
     {
-        //Move();
     }
 
-    public virtual void Fall(HexTile tile)
+    public void CheckFall(BreakArg breakArg)
     {
-        BeforeFall.Invoke(this);
-
-
-        StartCoroutine(MoveToPosition(new Vector3(transform.position.x, -20, -10), 1f));
-        Debug.Log("Is out of bounds.");
-        gameObject.SetActive(false);
-
-        AfterFall.Invoke(this);
+        if(_currentPosition == breakArg.POSITION)
+        {
+            EventManager.instance.GE_Fall.Invoke(new FallArg(breakArg.SOURCE, this));
+        }
     }
+
+    public virtual void Fall(FallArg fallArg)
+    {
+        if (this == fallArg.FALLING)
+        {
+            FallAndDisable();
+        }
+    }
+
+    public virtual IEnumerator FallAndDisable()
+    {
+        yield return StartCoroutine(Helper.MoveToPosition(transform, new Vector3(transform.position.x, -20, -10), 1f));
+        gameObject.SetActive(false);
+    }
+
+
+    public void OnHoverLeave()
+    {
+        RestoreColor();
+    }
+
+    public void OnHoverEnter()
+    {
+        DarkenColor();
+    }
+
+    private void DarkenColor()
+    {
+        Color darkerColor = _originalColor * 0.5f; // Reduce brightness (50% darker)
+        darkerColor.a = _originalColor.a; // Preserve original alpha
+        _spriteRenderer.color = darkerColor;
+    }
+
+    private void RestoreColor()
+    {
+        if (_originalColor != null)
+        {
+            _spriteRenderer.color = _originalColor;
+        }
+    }
+
+    public void OnSelect()
+    {
+    }
+
+    public void OnDeselect()
+    {
+    }
+
+    public void GetPushed(GameObject pushedBy, int tilesPushed)
+    {
+        HexTile currentTile = GridManager.instance.GetHexTileForGameObject(gameObject);
+        HexTile pushedFromTile = GridManager.instance.GetHexTileForGameObject(gameObject);
+        Vector3Int currentPos = currentTile.GetCurrentGridPosition();
+        Vector3Int direction = Helper.GetTargetDirection(currentPos, pushedFromTile.GetCurrentGridPosition());
+        for (int i = 0; i < tilesPushed; i++) 
+        {
+        }
+    }
+
 }

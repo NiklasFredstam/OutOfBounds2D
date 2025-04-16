@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b487cd03aa13f9a4f8b8ad01081b4203, type: 3}
+  m_Name: Ditch
+  m_EditorClassIdentifier: 
+  AbilityName: Ditch
+  Prefab: {fileID: 3458652111529320279, guid: cf7d2bd3886ed9643b6e423c912883d6, type: 3}
+  AbilityWindowSprite: {fileID: 4821074738342419740, guid: c939c8b76aff94c43ae52181857d1a28, type: 3}
+  AbilityType: 2
+  SelectState: 0

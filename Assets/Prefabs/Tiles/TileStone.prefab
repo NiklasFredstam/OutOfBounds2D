@@ -101,7 +101,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1b4ee8e513f78cf4589c9c51b604ca66, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  currentCellPosition: {x: 0, y: 0, z: 0}
+  _currentGridPosition: {x: 0, y: 0, z: 0}
+  _tileStats:
+    BaseHealth: 0
+    CurrentHealth: 0
+    MovementReduction: 0
 --- !u!60 &-1119239899617166938
 PolygonCollider2D:
   m_ObjectHideFlags: 0

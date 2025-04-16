@@ -15,6 +15,7 @@ public struct UnitStats
     public int Strength;
     public int Movement;
     public int DestructivePower;
+    public int DamageDealt;
 }
 
 [Serializable]

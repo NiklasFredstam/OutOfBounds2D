@@ -1,21 +1,16 @@
+using System;
 using UnityEngine;
 
-public class HexTile : MonoBehaviour
+public class HexTile : MonoBehaviour, ISelectable, IHovereable
 {
-    [SerializeField]
-    private Vector3Int _currentGridPosition;
-    [SerializeField]
-    private TileStats _tileStats;
     private SpriteRenderer _spriteRenderer;
     private Collider2D _polygonCollider;
     private Color _originalColor;
 
-    //Behaviour
-    public Event<int> BeforeTileDamage = new Event<int>();
-    public Event<int> AfterTileDamage = new Event<int>();
-    public Event<HexTile> BeforeTileBreak = new Event<HexTile>();
-    public Event<HexTile> AfterTileBreak = new Event<HexTile>();
-
+    [SerializeField]
+    private Vector3Int _currentGridPosition;
+    [SerializeField]
+    private TileStats _tileStats;
 
 
     public void SetStats(TileStats tileStats) { _tileStats = tileStats; }
@@ -23,7 +18,12 @@ public class HexTile : MonoBehaviour
     private void Awake() {
         _spriteRenderer = GetComponent<SpriteRenderer>();
         _polygonCollider = GetComponent<PolygonCollider2D>();
+        _originalColor = _spriteRenderer.color;
         UpdateTilePriority();
+    }
+
+    public void MovedTo(Moveable moveable)
+    {
     }
 
 
@@ -54,40 +54,13 @@ public class HexTile : MonoBehaviour
         }
     }
 
-    private void OnMouseEnter()
+    public void TakeDamage(TakeDamageArg takeDamageArg)
     {
-        DarkenColor();
-    }
-
-    private void OnMouseExit()
-    {
-        RestoreColor();
-    }
-
-    private void OnMouseDown()
-    {
-    }
-
-    private void OnMouseUp()
-    {
-        Debug.Log($"Clicked grid at {_currentGridPosition.x} {_currentGridPosition.y}");
-        InputManager.OnTileClick.Invoke(this);
-    }
-
-
-    public void TakeDamage(int amount)
-    {
-        BeforeTileDamage.Invoke(amount);
-
-        _tileStats.CurrentHealth -= amount;
-        _tileStats.CurrentHealth = Mathf.Max(_tileStats.CurrentHealth, 0); // Clamp to 0
-        Debug.Log($"{gameObject.name} took {amount} damage. Remaining health: {_tileStats.CurrentHealth}");
-        
-        AfterTileDamage.Invoke(amount);
-
-        if (ShouldBreak())
+        if(takeDamageArg.TARGET == this)
         {
-            BreakTile();
+            _tileStats.CurrentHealth -= takeDamageArg.DAMAGE;
+            _tileStats.CurrentHealth = Mathf.Max(_tileStats.CurrentHealth, 0); // Min health is 0
+            Debug.Log($"{gameObject.name} took {takeDamageArg.DAMAGE} damage. Remaining health: {_tileStats.CurrentHealth}");
         }
     }
 
@@ -96,7 +69,7 @@ public class HexTile : MonoBehaviour
         if (_tileStats.CurrentHealth < _tileStats.BaseHealth)
         {
             _tileStats.CurrentHealth += amount;
-            _tileStats.CurrentHealth = Mathf.Min(_tileStats.CurrentHealth, _tileStats.BaseHealth); // Clamp to 3
+            _tileStats.CurrentHealth = Mathf.Min(_tileStats.CurrentHealth, _tileStats.BaseHealth); // Max heal is Basehealth
             Debug.Log($"{gameObject.name} repaired by {amount}. Current health: {_tileStats.CurrentHealth}");
         }
         else
@@ -111,26 +84,26 @@ public class HexTile : MonoBehaviour
         _tileStats.CurrentHealth += amount;
         Debug.Log($"{gameObject.name} reinforced by {amount}. Current health: {_tileStats.CurrentHealth}");
     }
-
-    private void BreakTile()
+    public void CheckBreak(TakeDamageArg damageArg)
     {
-        BeforeTileBreak.Invoke(this);
-
-        Debug.Log($"{gameObject.name} was destroyed");
-        gameObject.SetActive(false);
-
-        AfterTileBreak.Invoke(this);
+        if (_tileStats.CurrentHealth == 0)
+        {
+            EventManager.instance.GE_Break.Invoke(new BreakArg(damageArg.UNIT_SOURCE, _currentGridPosition, this));
+        }
     }
 
-
-    private bool ShouldBreak()
+    public void Break(BreakArg breakArg)
     {
-        return _tileStats.CurrentHealth == 0;
+        if(breakArg.TILE == this)
+        {
+            Debug.Log($"{gameObject.name} was destroyed");
+            gameObject.SetActive(false);
+            GridManager.instance.RemoveTile(this);
+        }
     }
 
     private void DarkenColor()
     {
-        _originalColor = _spriteRenderer.color;
         Color darkerColor = _originalColor * 0.5f; // Reduce brightness (50% darker)
         darkerColor.a = _originalColor.a; // Preserve original alpha
         _spriteRenderer.color = darkerColor;
@@ -142,5 +115,28 @@ public class HexTile : MonoBehaviour
         {
             _spriteRenderer.color = _originalColor;
         }
+    }
+
+    public void OnSelect()
+    {
+    }
+
+    public void OnDeselect()
+    {
+    }
+
+    public void OnHoverLeave()
+    {
+        RestoreColor();
+    }
+
+    public void OnHoverEnter()
+    {
+        DarkenColor();
+    }
+
+    public Vector3Int GetCurrentGridPosition()
+    {
+        return _currentGridPosition;
     }
 }

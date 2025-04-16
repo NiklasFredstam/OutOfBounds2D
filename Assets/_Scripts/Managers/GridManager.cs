@@ -1,35 +1,38 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class GridManager : Singleton<GridManager> 
 {
-
     [SerializeField]
-    private HexGrid _hexGrid;
+    public HexGrid HexGrid;
 
+    //move this out
+    private readonly List<Vector3Int> _exampleGrid = new List<Vector3Int>
+    {
+        new (0,0),
+        new (1,0),
+        new (2,0),
+        new (-1,1),
+        new (0,1),
+        new (1,1),
+        new (2,1),
+        new (0,2),
+        new (1,2),
+        new (2,2),
+    };
 
     public void SpawnHexGrid()
     {
-        if (_hexGrid == null) return;
+        if (HexGrid == null) return;
         SpawnGrid(_exampleGrid);
     }
 
-    public void MoveMoveableToHex(Moveable moveable, HexTile toTile)
-    {
-        if (toTile.gameObject.activeSelf)
-        {
-            HexTile fromTile = _hexGrid.GetHexTileFromWorldPosition(moveable.transform.position);
-            fromTile.AfterTileBreak.Unsubscribe(moveable.Fall);
-            toTile.AfterTileBreak.Subscribe(moveable.Fall);
-            moveable.Move(toTile.transform.position);
-        }
-        //DO THIS ONE AT A TIME, calculate the path here and do it        
-    }
 
     //This will probably be unnceccsary later when you choose when to spawn /either preset or dynamically
     public HexTile GetHexTileFromGrid(Vector3Int gridPosition)
     {
-        return _hexGrid.GetHexTileFromGridPosition(gridPosition);
+        return HexGrid.GetHexTileFromGridPosition(gridPosition);
     }
 
 
@@ -45,14 +48,14 @@ public class GridManager : Singleton<GridManager>
     private void SpawnHexTile(TileType tileType, Vector3Int hexPosition)
     {
         //Get position to spawn cell
-        Vector3 worldPosition = _hexGrid.GetWorldPositionOfHex(hexPosition);
+        Vector3 worldPosition = HexGrid.GetWorldPositionOfHex(hexPosition);
 
         //TODO: Move other tiles if spawned on a tile.
 
         //Get resource, create it, and save it in dict
         HexTileScriptable toSpawn = ResourceSystem.instance.GetTile(tileType);
         HexTile createdTile = Instantiate(toSpawn.Prefab, worldPosition, Quaternion.identity);
-        _hexGrid.AddHexTile(createdTile);
+        HexGrid.AddHexTile(createdTile);
 
         //Set parent and name to keep it tidy
         GameObject grid = GameObject.Find("HexGrid");
@@ -62,6 +65,21 @@ public class GridManager : Singleton<GridManager>
         //Set stats and data on cell
         createdTile.UpdateTilePosition(hexPosition);
         createdTile.SetStats(toSpawn.TileStats);
+
+        //Subscribe
+        EventManager.instance.GE_TakeDamage.SubscribeOn(createdTile.TakeDamage);
+        EventManager.instance.GE_Break.SubscribeOn(createdTile.Break);
+
+        EventManager.instance.GE_TakeDamage.SubscribeAfter(createdTile.CheckBreak);
+    }
+
+    public void RemoveTile(HexTile tile)
+    {
+        EventManager.instance.GE_Break.UnsubscribeOn(tile.Break);
+        EventManager.instance.GE_TakeDamage.UnsubscribeOn(tile.TakeDamage);
+
+        EventManager.instance.GE_TakeDamage.UnsubscribeAfter(tile.CheckBreak);
+        HexGrid.RemoveHexTile(tile);
     }
 
     private string GetHexTileName(Vector3Int hexPosition)
@@ -69,18 +87,14 @@ public class GridManager : Singleton<GridManager>
         return $"HexTile({hexPosition.x}, {hexPosition.y})";
     }
 
-    //move this out
-    private List<Vector3Int> _exampleGrid = new List<Vector3Int>
+    public HexTile GetHexTileForGameObject(GameObject gameObject)
     {
-        new Vector3Int(0,0),
-        new Vector3Int(1,0),
-        new Vector3Int(2,0),
-        new Vector3Int(-1,1),
-        new Vector3Int(0,1),
-        new Vector3Int(1,1),
-        new Vector3Int(2,1),
-        new Vector3Int(0,2),
-        new Vector3Int(1,2),
-        new Vector3Int(2,2),
-    };
+        Vector3Int gridPosition = Vector3Int.RoundToInt(gameObject.transform.position);
+        return HexGrid.GetHexTileFromGridPosition(gridPosition);
+    }
+
+    public Vector3 GetWorldPositionToPlaceMoveableOnInGrid(Vector3Int gridPos)
+    {
+        return HexGrid.GetWorldPositionOfHex(gridPos);
+    }
 }

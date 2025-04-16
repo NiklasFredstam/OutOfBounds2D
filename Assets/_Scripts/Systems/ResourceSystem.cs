@@ -12,6 +12,9 @@ public class ResourceSystem : Singleton<ResourceSystem>
     public List<HexTileScriptable> Tiles { get; private set; }
     private Dictionary<TileType, HexTileScriptable> _tilesDict;
 
+    public List<AbilityScriptable> Abilities { get; private set; }
+    private Dictionary<AbilityType, AbilityScriptable> _abilitiesDict;
+
     protected override void Awake()
     {
         base.Awake();
@@ -26,6 +29,9 @@ public class ResourceSystem : Singleton<ResourceSystem>
         Tiles = Resources.LoadAll<HexTileScriptable>("Tiles").ToList();
         _tilesDict = Tiles.ToDictionary(tile => tile.TileType, tile => tile);
 
+        Abilities = Resources.LoadAll<AbilityScriptable>("Abilities").ToList();
+        _abilitiesDict = Abilities.ToDictionary(ability => ability.AbilityType, ability => ability);
+
     }
 
     //We can probably move this out as well
@@ -37,4 +43,6 @@ public class ResourceSystem : Singleton<ResourceSystem>
     public HexTileScriptable GetRandomTile() => _tilesDict[(TileType)Random.Range(0, Tiles.Count)];
 
     //Expand
+    public AbilityScriptable GetAbility(AbilityType type) => _abilitiesDict[type];
+    public AbilityScriptable GetRandomAbility() => _abilitiesDict[(AbilityType)Random.Range(0, Abilities.Count)];
 }
