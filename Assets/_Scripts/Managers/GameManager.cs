@@ -1,4 +1,6 @@
+using NUnit.Framework;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -95,7 +97,8 @@ public class GameManager : Singleton<GameManager>
 
     private void HandleUnitTurnStart()
     {
-        InputManager.instance.SetUIAbilities(TurnManager.instance.GetCurrentTurnUnit());
+        List<Ability> abilitiesForCurrentTurn = TurnManager.instance.GetCurrentTurnUnit() != null ? TurnManager.instance.GetCurrentTurnUnit().GetAbilities() : new();
+        InputManager.instance.SetUIAbilities(abilitiesForCurrentTurn);
     }
 
     public void CheckGameOver(FallArg arg)

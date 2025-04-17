@@ -6,7 +6,7 @@ public class HexGrid : MonoBehaviour
 {
     [SerializeField]
     private Grid _grid;
-    private readonly Dictionary<Vector3Int, HexTile> _hexTileDictionary = new Dictionary<Vector3Int, HexTile>();
+    private readonly Dictionary<Vector3Int, HexTile> _hexTileDictionary = new();
 
 
     public void RemoveHexTile(HexTile hexTile)
@@ -40,169 +40,106 @@ public class HexGrid : MonoBehaviour
         return _grid.WorldToCell(worldPosition);
     }
 
-    public List<HexTile> FindPathBetween(HexTile start, HexTile goal)
+
+
+    public List<HexTile> GetAllTiles() => _hexTileDictionary.Values.ToList();
+
+
+    private static readonly Vector3Int[] evenRowOffsets = new Vector3Int[]
     {
-        List<HexTile> result = new List<HexTile>();
-        List<Vector3Int> resultPositions = FindPath(GetGridPositionOfHex(start.transform.position), GetGridPositionOfHex(goal.transform.position));
-        if(resultPositions == null) { return null; }
-        foreach (Vector3Int gridPos in resultPositions)
+    new(+1, 0, 0),     // E
+    new(0, +1, 0),     // NE
+    new(-1, +1, 0),    // NW
+    new(-1, 0, 0),     // W
+    new(-1, -1, 0),    // SW
+    new(0, -1, 0),     // SE
+    };
+
+    private static readonly Vector3Int[] oddRowOffsets = new Vector3Int[]
+    {
+    new(+1, 0, 0),     // E
+    new(+1, +1, 0),    // NE
+    new(0, +1, 0),     // NW
+    new(-1, 0, 0),     // W
+    new(0, -1, 0),     // SW
+    new(+1, -1, 0),    // SE
+    };
+
+    private IEnumerable<Vector3Int> GetHexNeighbors(Vector3Int cellPos)
+    {
+        bool isOdd = cellPos.y % 2 != 0; // <-- Use Y now if row-offset
+        var offsets = isOdd ? oddRowOffsets : evenRowOffsets;
+
+        foreach (var offset in offsets)
         {
-            result.Add(_hexTileDictionary[gridPos]);
+            Vector3Int neighbor = cellPos + offset;
+            if (_hexTileDictionary.ContainsKey(neighbor))
+                yield return neighbor;
         }
-        return result;
     }
 
     public List<Vector3Int> FindPath(Vector3Int start, Vector3Int goal)
     {
-        if (!_hexTileDictionary.ContainsKey(start) || !_hexTileDictionary.ContainsKey(goal))
-        {
-            Debug.LogError("Start or Goal node does not exist in the dictionary.");
-            return null;
-        }
-
-        if (!_hexTileDictionary[start].gameObject.activeSelf || !_hexTileDictionary[goal].gameObject.activeSelf)
-        {
-            Debug.LogError("Start or Goal node is not traversable.");
-            return null;
-        }
-
-        var openSet = new PriorityQueue<Vector3Int>();
+        var openSet = new HashSet<Vector3Int> { start };
         var cameFrom = new Dictionary<Vector3Int, Vector3Int>();
-        var gScore = new Dictionary<Vector3Int, float>();
-        var fScore = new Dictionary<Vector3Int, float>();
 
-        foreach (var key in _hexTileDictionary.Keys)
-        {
-            gScore[key] = float.MaxValue;
-            fScore[key] = float.MaxValue;
-        }
-
-        gScore[start] = 0;
-        fScore[start] = Heuristic(start, goal);
-        openSet.Enqueue(start, fScore[start]);
+        var gScore = new Dictionary<Vector3Int, float> { [start] = 0 };
+        var fScore = new Dictionary<Vector3Int, float> { [start] = HexDistance(start, goal) };
 
         while (openSet.Count > 0)
         {
-            Vector3Int current = openSet.Dequeue();
+            Vector3Int current = openSet.OrderBy(n => fScore.GetValueOrDefault(n, float.MaxValue)).First();
 
             if (current == goal)
                 return ReconstructPath(cameFrom, current);
 
-            foreach (Vector3Int neighbor in GetNeighbors(current))
+            openSet.Remove(current);
+
+            foreach (var neighbor in GetHexNeighbors(current))
             {
-                if (!_hexTileDictionary.ContainsKey(neighbor) || !_hexTileDictionary[neighbor].gameObject.activeSelf)
-                    continue;
+                if (!_hexTileDictionary.ContainsKey(neighbor)) continue; // skip out-of-bounds tiles
 
-                float tentativeGScore = gScore[current] + Cost(current, neighbor);
-
-                if (tentativeGScore < gScore[neighbor])
+                float tentativeGScore = gScore[current] + GetCost(current, neighbor);
+                if (!gScore.ContainsKey(neighbor) || tentativeGScore < gScore[neighbor])
                 {
                     cameFrom[neighbor] = current;
                     gScore[neighbor] = tentativeGScore;
-                    fScore[neighbor] = tentativeGScore + Heuristic(neighbor, goal);
-
-                    if (!openSet.Contains(neighbor))
-                        openSet.Enqueue(neighbor, fScore[neighbor]);
+                    fScore[neighbor] = tentativeGScore + HexDistance(neighbor, goal);
+                    openSet.Add(neighbor);
                 }
             }
         }
 
-        Debug.LogError("Path not found.");
-        return null;
+        return null; // no path found
     }
+
+    private float GetCost(Vector3Int from, Vector3Int to)
+    {
+        return 1f; // Or _hexTileDictionary[to].Cost if you have terrain costs
+    }
+
+    private int HexDistance(Vector3Int a, Vector3Int b)
+    {
+        // Convert to cube coordinates for distance
+        int x1 = a.x;
+        int y1 = a.y - (a.x - (a.x & 1)) / 2;
+        int z1 = -x1 - y1;
+
+        int x2 = b.x;
+        int y2 = b.y - (b.x - (b.x & 1)) / 2;
+        int z2 = -x2 - y2;
+
+        return Mathf.Max(Mathf.Abs(x1 - x2), Mathf.Abs(y1 - y2), Mathf.Abs(z1 - z2));
+    }
+
     private List<Vector3Int> ReconstructPath(Dictionary<Vector3Int, Vector3Int> cameFrom, Vector3Int current)
     {
-        List<Vector3Int> path = new List<Vector3Int> { current };
-
+        var path = new List<Vector3Int> { current };
         while (cameFrom.ContainsKey(current))
         {
             current = cameFrom[current];
-            path.Add(current);
+            path.Insert(0, current);
         }
-
-        path.Reverse();
         return path;
     }
-
-    public List<HexTile> GetAllTiles() => _hexTileDictionary.Values.ToList();
-
-    private float Heuristic(Vector3Int a, Vector3Int b)
-    {
-        return Vector3Int.Distance(a, b);
-    }
-
-    private float Cost(Vector3Int a, Vector3Int b)
-    {
-        return 1.0f; // Uniform cost; modify if needed
-    }
-
-    private List<Vector3Int> GetNeighbors(Vector3Int hex)
-    {
-        List<Vector3Int> directions = new List<Vector3Int>
-        {
-            new(1, -1, 0),
-            new(1, 0, -1),
-            new(0, 1, -1),
-            new(-1, 1, 0),
-            new(-1, 0, 1),
-            new(0, -1, 1)
-        };
-
-        List<Vector3Int> neighbors = new List<Vector3Int>();
-
-        foreach (var direction in directions)
-        {
-            Vector3Int neighbor = hex + direction;
-            if (_hexTileDictionary.ContainsKey(neighbor))
-            {
-                neighbors.Add(neighbor);
-            }
-        }
-
-        return neighbors;
-    }
-
-
 }
-public class PriorityQueue<T>
-{
-    private readonly List<KeyValuePair<T, float>> _elements = new List<KeyValuePair<T, float>>();
-
-    public int Count => _elements.Count;
-
-    public void Enqueue(T item, float priority)
-    {
-        _elements.Add(new KeyValuePair<T, float>(item, priority));
-    }
-
-    public T Dequeue()
-    {
-        int bestIndex = 0;
-
-        for (int i = 0; i < _elements.Count; i++)
-        {
-            if (_elements[i].Value < _elements[bestIndex].Value)
-            {
-                bestIndex = i;
-            }
-        }
-
-        T bestItem = _elements[bestIndex].Key;
-        _elements.RemoveAt(bestIndex);
-        return bestItem;
-    }
-
-    public bool Contains(T item)
-    {
-        foreach (var element in _elements)
-        {
-            if (EqualityComparer<T>.Default.Equals(element.Key, item))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-}
-

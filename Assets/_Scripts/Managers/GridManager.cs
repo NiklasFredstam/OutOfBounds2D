@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 
 public class GridManager : Singleton<GridManager> 
@@ -96,5 +97,10 @@ public class GridManager : Singleton<GridManager>
     public Vector3 GetWorldPositionToPlaceMoveableOnInGrid(Vector3Int gridPos)
     {
         return HexGrid.GetWorldPositionOfHex(gridPos);
+    }
+
+    public List<Vector3Int> GetQuickestPath(Vector3Int fromThisPosition, Vector3Int toThisPosition) {
+
+        return HexGrid.FindPath(fromThisPosition, toThisPosition);
     }
 }

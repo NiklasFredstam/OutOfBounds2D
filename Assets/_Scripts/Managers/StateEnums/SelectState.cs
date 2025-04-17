@@ -4,5 +4,6 @@ public enum SelectState
 {
     Grid,
     Moveable,
-    None
+    None,
+    Path,
 }

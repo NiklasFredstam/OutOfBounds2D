@@ -1,10 +1,12 @@
 using System.Collections;
+using System.IO;
 using UnityEngine;
 
 public abstract class Moveable : MonoBehaviour, IHovereable, ISelectable
 {
     protected Color _originalColor;
     protected SpriteRenderer _spriteRenderer;
+    [SerializeField]
     protected Vector3Int _currentPosition;
 
     void Awake()
@@ -19,6 +21,11 @@ public abstract class Moveable : MonoBehaviour, IHovereable, ISelectable
     public virtual void SetCurrentPosition(Vector3Int currentPosition)
     {
         _currentPosition = currentPosition;
+    }
+
+    public virtual Vector3Int GetCurrentPosition()
+    {
+        return _currentPosition;
     }
 
     public virtual void SetMoveableStats(MoveableStats moveableStats)
@@ -40,8 +47,13 @@ public abstract class Moveable : MonoBehaviour, IHovereable, ISelectable
     {
         if(moveArg.SOURCE == this)
         {
-            _currentPosition = moveArg.TARGET.GetCurrentGridPosition();
-            yield return Helper.MoveToPosition(transform, GridManager.instance.GetWorldPositionToPlaceMoveableOnInGrid(moveArg.TARGET.GetCurrentGridPosition()), 0.5f);
+            _currentPosition = moveArg.PATH[moveArg.PATH.Count - 1];
+
+            foreach (var step in moveArg.PATH)
+            {
+                Vector3 worldPos = GridManager.instance.GetWorldPositionToPlaceMoveableOnInGrid(step);
+                yield return Helper.MoveToPosition(transform, worldPos, 0.2f);
+            }
         }
     }
 

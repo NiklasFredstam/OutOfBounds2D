@@ -39,10 +39,10 @@ public class InputManager : Singleton<InputManager>
             ability.gameObject.SetActive(false);
         }
     }
-    public void SetUIAbilities(Unit unit)
+    public void SetUIAbilities(List<Ability> abilities)
     {
         DeactivateOtherAbilities();
-        foreach (Ability ability in unit.GetAbilities())
+        foreach (Ability ability in abilities)
         {
             ability.gameObject.SetActive(true);
         }

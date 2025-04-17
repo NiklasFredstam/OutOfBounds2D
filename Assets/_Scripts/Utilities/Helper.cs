@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using static UnityEngine.RuleTile.TilingRuleOutput;
 
 public static class Helper
 {
@@ -50,7 +49,7 @@ public static class Helper
         return mousePos;
     }
 
-    public static IEnumerator MoveToPosition(UnityEngine.Transform transformToMove, Vector3 targetPosition, float duration)
+    public static IEnumerator MoveToPosition(Transform transformToMove, Vector3 targetPosition, float duration)
     {
         Vector3 startPosition = transformToMove.position;
         float elapsedTime = 0f;
