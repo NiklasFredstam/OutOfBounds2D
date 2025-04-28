@@ -3,42 +3,31 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public abstract class Ability : MonoBehaviour
+public abstract class Ability
 {
 
-    [SerializeField]
-    private TMP_Text _name;
+    public string AbilityName;
 
-    [SerializeField]
-    private TMP_Text _hotkeyNumber;
+    public Sprite AbilityImage;
 
-    private SelectState _selectedState;
+    public SelectState SelectState;
 
-    public void SetAbilityName(string text)
+    public int TargetRange;
+
+    public virtual void CommitAbility(Unit sourceUnit, GameObject target)
     {
-        _name.text = text;
+        UseAbility(sourceUnit, target);
+    }
+    public abstract void UseAbility(Unit sourceUnit, GameObject target);
+
+
+    public virtual void Initialize(AbilityScriptable data)
+    {
+        AbilityName = data.AbilityName;
+        AbilityImage = data.AbilityWindowSprite;
+        SelectState = data.SelectState;
+        TargetRange = data.TargetRange;
     }
 
-    public void SetHotkeyNumber(string hotkeyNumber)
-    {
-        _hotkeyNumber.text = hotkeyNumber;
-    }
-
-    public void AbilityClick()
-    {
-        InputManager.instance.SetSelectedAbility(this);
-    }
-    public abstract void QueueAbility(Unit sourceUnit, GameObject target);
-    public SelectState GetSelectState() 
-    {
-        return _selectedState;
-    }
-
-    public void SetSelectedState(SelectState selectedState)
-    {
-        _selectedState = selectedState;
-    }
-
-    public string GetName() { return _name.text; }   
 
 }

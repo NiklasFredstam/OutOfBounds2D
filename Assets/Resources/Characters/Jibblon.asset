@@ -17,14 +17,15 @@ MonoBehaviour:
   _unitStats:
     Alive: 1
     Speed: 6
-    Strength: 3
-    Movement: 3
+    Power: 4
     DestructivePower: 4
     DamageDealt: 0
   _moveableStats:
     Weight: 3
+    IsOnGrid: 1
   Prefab: {fileID: 113825693053429732, guid: 782f771598e96984d8906419e96d0169, type: 3}
   Description: Jibblon the destroyer
   MenuSprite: {fileID: -8361188048454911780, guid: 41eb09bf35494ae43ac725b2fe0dca7f, type: 3}
   CharacterType: 1
-  _abilities: 010000000000000002000000
+  _abilities: 020000000100000000000000
+  _items: 00000000

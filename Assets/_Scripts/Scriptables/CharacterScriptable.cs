@@ -25,10 +25,14 @@ public class CharacterScriptable : ScriptableObject
 
     [SerializeField] private List<AbilityType> _abilities;
     public List<AbilityType> Abilities => _abilities;
+
+    [SerializeField] private List<ItemType> _items;
+    public List<ItemType> Items => _items;
 }
 
 public enum CharacterType
 {
     Michi,
-    Jibblon
+    Jibblon,
+    Phillzor
 }

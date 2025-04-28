@@ -17,3 +17,4 @@ MonoBehaviour:
   AbilityWindowSprite: {fileID: -7279525710136958521, guid: faf88ce833435e94fa6e8c5289426bdb, type: 3}
   AbilityType: 0
   SelectState: 1
+  TargetRange: 1

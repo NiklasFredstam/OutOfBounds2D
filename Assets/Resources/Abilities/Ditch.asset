@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Ditch
   m_EditorClassIdentifier: 
   AbilityName: Ditch
-  Prefab: {fileID: 3458652111529320279, guid: cf7d2bd3886ed9643b6e423c912883d6, type: 3}
-  AbilityWindowSprite: {fileID: 4821074738342419740, guid: c939c8b76aff94c43ae52181857d1a28, type: 3}
+  AbilityWindowSprite: {fileID: -3277740194684052510, guid: 631b9c88485c8e04891aeded9618729a, type: 3}
   AbilityType: 2
-  SelectState: 0
+  SelectState: 3
+  TargetRange: 2

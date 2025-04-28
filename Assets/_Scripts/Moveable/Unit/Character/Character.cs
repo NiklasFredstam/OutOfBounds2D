@@ -1,29 +1,42 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class Character : Unit
 {
     [SerializeField]
     protected CharacterStats CharacterStats;
+
     public virtual void SetCharacterStats(CharacterStats characterStats)
     {
         CharacterStats = characterStats;
     }
 
+    protected override void Awake()
+    {
+        base.Awake();
+    }
+
     public override void Fall(FallArg fallArg)
     {
-        if (fallArg.FALLING == this && _unitStats.Alive)
+        if (fallArg.FALLING == this && _unitStats.Alive && _moveableStats.IsOnGrid)
         {
-            StartCoroutine(FallAndDisable());
+            _unitStats.Alive = false;
+            _moveableStats.IsOnGrid = false;
+            Debug.Log(gameObject.name +  " fell out of bounds.");
+            MoveableManager.instance.RemoveCharacter(this);
+            AnimationQueue.instance.EnqueueAnimation(AnimateFall(transform, new Vector3(transform.position.x, transform.position.y - 10, 10), 2f));
         }
     }
 
-    public override IEnumerator FallAndDisable()
+    public override List<StatDetail> GetDetails()
     {
-        _unitStats.Alive = false;
-        yield return Helper.MoveToPosition(transform, new Vector3(transform.position.x, -20, -10), 1f);
-        Debug.Log("Michi fell out of bounds.");
-        gameObject.SetActive(false);
-        UnitManager.instance.RemoveCharacter(this);
+        return base.GetDetails();
     }
+
+    public override string GetDescription()
+    {
+        return "Character Description";
+    }
+
 }

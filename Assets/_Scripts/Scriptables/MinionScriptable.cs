@@ -5,8 +5,8 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "Minion", menuName = "Scriptable Minion")]
 public class MinionScriptable : ScriptableObject
 {
-    [SerializeField] private CharacterStats _stats;
-    public CharacterStats MinionBaseStats => _stats;
+    [SerializeField] private UnitStats _stats;
+    public UnitStats MinionBaseStats => _stats;
 
     public GameObject Prefab;
     public string Description;

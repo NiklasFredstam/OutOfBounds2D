@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEngine;
 
 public class GridManager : Singleton<GridManager> 
@@ -14,10 +15,13 @@ public class GridManager : Singleton<GridManager>
         new (0,0),
         new (1,0),
         new (2,0),
+        new (3,0),
         new (-1,1),
         new (0,1),
         new (1,1),
         new (2,1),
+        new (3,1),
+        new (-1,2),
         new (0,2),
         new (1,2),
         new (2,2),
@@ -72,6 +76,11 @@ public class GridManager : Singleton<GridManager>
         EventManager.instance.GE_Break.SubscribeOn(createdTile.Break);
 
         EventManager.instance.GE_TakeDamage.SubscribeAfter(createdTile.CheckBreak);
+
+        EventManager.instance.UI_Targettable.SubscribeOn(createdTile.OnTargettable);
+        EventManager.instance.UI_Select.SubscribeOn(createdTile.OnSelect);
+        EventManager.instance.UI_Hover.SubscribeOn(createdTile.OnHover);
+
     }
 
     public void RemoveTile(HexTile tile)
@@ -80,6 +89,11 @@ public class GridManager : Singleton<GridManager>
         EventManager.instance.GE_TakeDamage.UnsubscribeOn(tile.TakeDamage);
 
         EventManager.instance.GE_TakeDamage.UnsubscribeAfter(tile.CheckBreak);
+
+        EventManager.instance.UI_Targettable.UnsubscribeOn(tile.OnTargettable);
+        EventManager.instance.UI_Select.UnsubscribeOn(tile.OnSelect);
+        EventManager.instance.UI_Hover.UnsubscribeOn(tile.OnHover);
+
         HexGrid.RemoveHexTile(tile);
     }
 
@@ -90,8 +104,13 @@ public class GridManager : Singleton<GridManager>
 
     public HexTile GetHexTileForGameObject(GameObject gameObject)
     {
-        Vector3Int gridPosition = Vector3Int.RoundToInt(gameObject.transform.position);
-        return HexGrid.GetHexTileFromGridPosition(gridPosition);
+        return HexGrid.GetHexTileFromWorldPosition(gameObject.transform.position);
+    }
+
+
+    public Vector3Int GetCellPositionOfGameObject(GameObject gameObject)
+    {
+        return HexGrid.GetGridPositionOfWorldPos(gameObject.transform.position);
     }
 
     public Vector3 GetWorldPositionToPlaceMoveableOnInGrid(Vector3Int gridPos)
@@ -99,8 +118,65 @@ public class GridManager : Singleton<GridManager>
         return HexGrid.GetWorldPositionOfHex(gridPos);
     }
 
+
     public List<Vector3Int> GetQuickestPath(Vector3Int fromThisPosition, Vector3Int toThisPosition) {
 
-        return HexGrid.FindPath(fromThisPosition, toThisPosition);
+        List<Vector3Int> path = HexGrid.FindPath(fromThisPosition, toThisPosition, MoveableManager.instance.GetOccupiedPositions());
+        path?.RemoveAt(0);
+        return path;
+    }
+
+    public List<Vector3Int> GetPositionsWithinRange(Vector3Int fromPosition, int range)
+    {
+        List<Vector3Int> positions = HexGrid.GetCellCoordinatesInRange(fromPosition, range);
+        return positions;
+    }
+
+    public List<Vector3Int> GetPositionsWithinRangeExcludingCenter(Vector3Int fromPosition, int range)
+    {
+        List<Vector3Int> positions = HexGrid.GetCellCoordinatesInRange(fromPosition, range);
+        positions.Remove(fromPosition);
+        return positions;
+    }
+
+    public HexDirection GetDirectionTo(Vector3Int fromPos, Vector3Int toPos)
+    {
+        return HexGrid.GetDirectionEnumTo(fromPos, toPos);
+    }
+
+    public List<Vector3Int> GetLineInDirection(Vector3Int fromPos, HexDirection direction, int length)
+    {
+        return HexGrid.GetLineInDirection(fromPos, direction, length);
+    }
+
+    public List<Vector3Int> GetLineForPush(Vector3Int fromPos, HexDirection direction, int length)
+    {
+        List<Vector3Int> line = HexGrid.GetLineInDirection(fromPos, direction, length);
+        List<Vector3Int> traversableLine = new();
+        foreach (Vector3Int pos in line)
+        {
+            if (!IsTileTraversable(pos))
+            {
+                //If something is in the way, then we just stop here.
+                break;
+            }
+            traversableLine.Add(pos);
+            if(!HexTileExistsAtPosition(pos))
+            {
+                //If the tile is missing we go over the edge and then fall.
+                break;
+            }
+        }
+        return traversableLine;
+    }
+
+    public bool HexTileExistsAtPosition(Vector3Int position)
+    {
+        return HexGrid.PositionHasHexTile(position);
+    }
+
+    public bool IsTileTraversable(Vector3Int position)
+    {
+        return !MoveableManager.instance.GetOccupiedPositions().Contains(position);
     }
 }

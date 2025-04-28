@@ -9,9 +9,12 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5905836514266865239}
+  - component: {fileID: 5580724354962145081}
   - component: {fileID: 1713246228901348055}
-  - component: {fileID: 4492391834151395250}
   - component: {fileID: -6776257001139090479}
+  - component: {fileID: 7689337113317518590}
+  - component: {fileID: 2229818693462728292}
+  - component: {fileID: 6029473011082794248}
   m_Layer: 7
   m_Name: Michi
   m_TagString: Untagged
@@ -34,6 +37,30 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5580724354962145081
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9156056622248899227}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aff10e8b0c31d3e438bef66ae72b2202, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _currentPosition: {x: 0, y: 0, z: 0}
+  _moveableStats:
+    Weight: 0
+    IsOnGrid: 0
+  _unitStats:
+    Alive: 0
+    Speed: 0
+    Strength: 0
+    DestructivePower: 0
+    DamageDealt: 0
+  CharacterStats:
+    Example: 0
 --- !u!212 &1713246228901348055
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -89,30 +116,6 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
---- !u!114 &4492391834151395250
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9156056622248899227}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aff10e8b0c31d3e438bef66ae72b2202, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  MoveableStats:
-    Weight: 0
-  unitStats:
-    Alive: 0
-    Speed: 0
-    Strength: 0
-    Movement: 0
-    DestructivePower: 0
-    DamageDealt: 0
-  abilities: []
-  CharacterStats:
-    Example: 0
 --- !u!60 &-6776257001139090479
 PolygonCollider2D:
   m_ObjectHideFlags: 0
@@ -181,3 +184,40 @@ PolygonCollider2D:
       - {x: 0.14, y: 0.08}
       - {x: 0.16, y: 0.07}
   m_UseDelaunayMesh: 0
+--- !u!114 &7689337113317518590
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9156056622248899227}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 455254112b1e224479647595c3eb339b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _fadeTime: 0.5
+--- !u!114 &2229818693462728292
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9156056622248899227}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a74d5b6e6c044940873636e97d3296d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &6029473011082794248
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9156056622248899227}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e7437c5390061e843b86d49c9fdc818e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

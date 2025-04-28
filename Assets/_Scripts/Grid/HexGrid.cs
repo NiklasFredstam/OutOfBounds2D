@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 public class HexGrid : MonoBehaviour
 {
@@ -11,12 +12,12 @@ public class HexGrid : MonoBehaviour
 
     public void RemoveHexTile(HexTile hexTile)
     {
-        _hexTileDictionary.Remove(GetGridPositionOfHex(hexTile.transform.position));
+        _hexTileDictionary.Remove(GetGridPositionOfWorldPos(hexTile.transform.position));
     }
 
     public void AddHexTile(HexTile hexTile)
     {
-        _hexTileDictionary.Add(GetGridPositionOfHex(hexTile.transform.position), hexTile);
+        _hexTileDictionary.Add(GetGridPositionOfWorldPos(hexTile.transform.position), hexTile);
     }
 
     public Vector3 GetWorldPositionOfHex(Vector3Int gridPosition)
@@ -31,11 +32,11 @@ public class HexGrid : MonoBehaviour
 
     public HexTile GetHexTileFromWorldPosition(Vector3 worldPosition)
     {
-        return _hexTileDictionary[GetGridPositionOfHex(worldPosition)];
+        return _hexTileDictionary[GetGridPositionOfWorldPos(worldPosition)];
     }
 
 
-    private Vector3Int GetGridPositionOfHex(Vector3 worldPosition)
+    public Vector3Int GetGridPositionOfWorldPos(Vector3 worldPosition)
     {
         return _grid.WorldToCell(worldPosition);
     }
@@ -44,31 +45,35 @@ public class HexGrid : MonoBehaviour
 
     public List<HexTile> GetAllTiles() => _hexTileDictionary.Values.ToList();
 
-
-    private static readonly Vector3Int[] evenRowOffsets = new Vector3Int[]
+    public bool PositionHasHexTile(Vector3Int position)
     {
-    new(+1, 0, 0),     // E
-    new(0, +1, 0),     // NE
-    new(-1, +1, 0),    // NW
-    new(-1, 0, 0),     // W
-    new(-1, -1, 0),    // SW
-    new(0, -1, 0),     // SE
+        return _hexTileDictionary.ContainsKey(position);
+    }
+
+    private static readonly Dictionary<HexDirection, Vector3Int> evenRowOffsets = new()
+    {
+        { HexDirection.E,  new(+1,  0, 0) },
+        { HexDirection.NE, new(0,  +1, 0) },
+        { HexDirection.NW, new(-1, +1, 0) },
+        { HexDirection.W,  new(-1,  0, 0) },
+        { HexDirection.SW, new(-1, -1, 0) },
+        { HexDirection.SE, new(0,  -1, 0) },
     };
 
-    private static readonly Vector3Int[] oddRowOffsets = new Vector3Int[]
+    private static readonly Dictionary<HexDirection, Vector3Int> oddRowOffsets = new()
     {
-    new(+1, 0, 0),     // E
-    new(+1, +1, 0),    // NE
-    new(0, +1, 0),     // NW
-    new(-1, 0, 0),     // W
-    new(0, -1, 0),     // SW
-    new(+1, -1, 0),    // SE
+        { HexDirection.E,  new(+1,  0, 0) },
+        { HexDirection.NE, new(+1, +1, 0) },
+        { HexDirection.NW, new(0,  +1, 0) },
+        { HexDirection.W,  new(-1,  0, 0) },
+        { HexDirection.SW, new(0,  -1, 0) },
+        { HexDirection.SE, new(+1, -1, 0) },
     };
 
     private IEnumerable<Vector3Int> GetHexNeighbors(Vector3Int cellPos)
     {
         bool isOdd = cellPos.y % 2 != 0; // <-- Use Y now if row-offset
-        var offsets = isOdd ? oddRowOffsets : evenRowOffsets;
+        var offsets = isOdd ? oddRowOffsets.Values : evenRowOffsets.Values;
 
         foreach (var offset in offsets)
         {
@@ -78,8 +83,11 @@ public class HexGrid : MonoBehaviour
         }
     }
 
-    public List<Vector3Int> FindPath(Vector3Int start, Vector3Int goal)
+    public List<Vector3Int> FindPath(Vector3Int start, Vector3Int goal, List<Vector3Int> nonTraversablePositions)
     {
+        nonTraversablePositions = nonTraversablePositions
+            .Where(pos => pos != start)
+            .ToList();
         var openSet = new HashSet<Vector3Int> { start };
         var cameFrom = new Dictionary<Vector3Int, Vector3Int>();
 
@@ -97,8 +105,10 @@ public class HexGrid : MonoBehaviour
 
             foreach (var neighbor in GetHexNeighbors(current))
             {
-                if (!_hexTileDictionary.ContainsKey(neighbor)) continue; // skip out-of-bounds tiles
-
+                if (!_hexTileDictionary.ContainsKey(neighbor) || nonTraversablePositions.Contains(neighbor))
+                {
+                    continue; // skip out-of-bounds and non traversable tiles
+                }
                 float tentativeGScore = gScore[current] + GetCost(current, neighbor);
                 if (!gScore.ContainsKey(neighbor) || tentativeGScore < gScore[neighbor])
                 {
@@ -120,16 +130,9 @@ public class HexGrid : MonoBehaviour
 
     private int HexDistance(Vector3Int a, Vector3Int b)
     {
-        // Convert to cube coordinates for distance
-        int x1 = a.x;
-        int y1 = a.y - (a.x - (a.x & 1)) / 2;
-        int z1 = -x1 - y1;
-
-        int x2 = b.x;
-        int y2 = b.y - (b.x - (b.x & 1)) / 2;
-        int z2 = -x2 - y2;
-
-        return Mathf.Max(Mathf.Abs(x1 - x2), Mathf.Abs(y1 - y2), Mathf.Abs(z1 - z2));
+        Vector3Int ac = OffsetToCube(a);
+        Vector3Int bc = OffsetToCube(b);
+        return Mathf.Max(Mathf.Abs(ac.x - bc.x), Mathf.Abs(ac.y - bc.y), Mathf.Abs(ac.z - bc.z));
     }
 
     private List<Vector3Int> ReconstructPath(Dictionary<Vector3Int, Vector3Int> cameFrom, Vector3Int current)
@@ -141,5 +144,80 @@ public class HexGrid : MonoBehaviour
             path.Insert(0, current);
         }
         return path;
+    }
+
+    public List<Vector3Int> GetCellCoordinatesInRange(Vector3Int center, int range)
+    {
+        List<Vector3Int> result = new List<Vector3Int>();
+        Vector3Int centerCube = OffsetToCube(center);
+        for (int dx = -range; dx <= range; dx++)
+        {
+            for (int dy = Mathf.Max(-range, -dx - range); dy <= Mathf.Min(range, -dx + range); dy++)
+            {
+                int dz = -dx - dy;
+                Vector3Int neighborCube = new (centerCube.x + dx, centerCube.y + dy, centerCube.z + dz);
+
+                Vector3Int neighborOffset = CubeToOffset(neighborCube);
+                if (_hexTileDictionary.ContainsKey(neighborOffset))
+                    result.Add(neighborOffset);
+            }
+        }
+        return result;
+    }
+    private Vector3Int OffsetToCube(Vector3Int offset)
+    {
+        int x = offset.x - (offset.y - (offset.y & 1)) / 2;
+        int z = offset.y;
+        int y = -x - z;
+        return new Vector3Int(x, y, z);
+    }
+
+    private Vector3Int CubeToOffset(Vector3Int cube)
+    {
+        int col = cube.x + (cube.z - (cube.z & 1)) / 2;
+        int row = cube.z;
+        return new Vector3Int(col, row, 0);
+    }
+
+    public HexDirection GetDirectionEnumTo(Vector3Int from, Vector3Int to)
+    {
+        if (from == to)
+            throw new System.ArgumentException("Source and target positions are the same.");
+
+        bool isOdd = from.y % 2 != 0;
+        var offsets = isOdd ? oddRowOffsets : evenRowOffsets;
+
+        HexDirection bestDirection = HexDirection.E;
+        int bestDist = int.MaxValue;
+
+        foreach (var pair in offsets)
+        {
+            Vector3Int neighbor = from + pair.Value;
+            int dist = HexDistance(neighbor, to);
+            if (dist < bestDist)
+            {
+                bestDist = dist;
+                bestDirection = pair.Key;
+            }
+        }
+
+        return bestDirection;
+    }
+
+    public List<Vector3Int> GetLineInDirection(Vector3Int start, HexDirection directionIndex, int length)
+    {
+        var result = new List<Vector3Int>();
+        Vector3Int current = start;
+
+        for (int i = 0; i < length; i++)
+        { 
+            bool isOdd = current.y % 2 != 0;
+            Vector3Int offset = isOdd ? oddRowOffsets[directionIndex] : evenRowOffsets[directionIndex];
+            current += offset;
+            result.Add(current);
+        }
+
+        result.Remove(start);   
+        return result;
     }
 }

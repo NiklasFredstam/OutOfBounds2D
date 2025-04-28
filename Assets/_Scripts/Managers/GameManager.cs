@@ -1,6 +1,8 @@
 using NUnit.Framework;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -10,6 +12,9 @@ public class GameManager : Singleton<GameManager>
     public static Action<GameState> OnAfterGameStateChanged;
     public GameState State { get; private set; }
 
+
+    public bool IsGameOver = false;
+
     void Start()
     {
         ChangeState(GameState.Starting);
@@ -17,6 +22,7 @@ public class GameManager : Singleton<GameManager>
 
     public void ChangeState(GameState newState)
     {
+
         OnBeforeGameStateChanged?.Invoke(newState);
         Debug.Log($"The gamestate is now : {newState}");
 
@@ -48,9 +54,10 @@ public class GameManager : Singleton<GameManager>
                 ChangeState(GameState.GameTurnStart);
                 break;
             case GameState.GameOver:
-                Debug.Log("The game is over, resetting the game");
-                SceneManager.LoadScene("Game");
-                EventManager.instance.ClearGameEvents();
+                if(!IsGameOver)
+                {
+                    HandleGameOver();
+                }
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(newState), newState, null);
@@ -62,9 +69,26 @@ public class GameManager : Singleton<GameManager>
 
     private void HandleStarting()
     {
+        //get into game premises from some menu manager. like
+        //get players, selected characters, selected starting positions, generate map(?)
+        PlayerManager.instance.RegisterPlayer("1", "Frälsaren", true);
+        PlayerManager.instance.RegisterPlayer("2", "Jibbletron", true);
+
+
         OnBeforeGameStateChanged += TurnManager.instance.OnBeforeGameStateChanged;
         EventManager.instance.GE_Fall.SubscribeAfter(CheckGameOver);
         ChangeState(GameState.SpawnHexGrid);
+    }
+
+    private void HandleGameOver()
+    {
+        Debug.Log("The game is over it resulted in a " +
+                  (PlayerManager.instance.GetPlayersStillInTheGame().Count == 0 ? "TIE" : "WIN") +
+                  " , resetting the game");
+        IsGameOver = true;
+
+        SceneManager.LoadScene("Game");
+        EventManager.instance.ClearGameEvents();
     }
 
     private void HandleSpawnHexGrid()
@@ -77,13 +101,16 @@ public class GameManager : Singleton<GameManager>
     private void HandleSpawnCharacters()
     {
         //Setup units
-        UnitManager.instance.SpawnCharacters();
+        MoveableManager.instance.SpawnCharacters();
         ChangeState(GameState.GameStart);
     }
 
     private void HandleUnitTurnEnd() 
     {
+
+        UIManager.instance.DestroyAbilityButtons();
         InputManager.instance.ClearCurrentSelections();
+
         Debug.Log($"All Players have taken their turn? {TurnManager.instance.IsGameTurnOver()}");
         if (TurnManager.instance.IsGameTurnOver())
         {
@@ -93,22 +120,50 @@ public class GameManager : Singleton<GameManager>
         {
             ChangeState(GameState.UnitTurnStart);
         }
+        
     }
 
     private void HandleUnitTurnStart()
     {
-        List<Ability> abilitiesForCurrentTurn = TurnManager.instance.GetCurrentTurnUnit() != null ? TurnManager.instance.GetCurrentTurnUnit().GetAbilities() : new();
-        InputManager.instance.SetUIAbilities(abilitiesForCurrentTurn);
+        if (TurnManager.instance.ControlsCurrentTurnUnit() && !IsGameOver)
+        {
+            List<Ability> abilitiesForCurrentTurn = TurnManager.instance.GetCurrentTurnUnit() != null ? TurnManager.instance.GetCurrentTurnUnit().GetAbilities() : new();
+            UIManager.instance.CreateAbilityButtons(abilitiesForCurrentTurn, TurnManager.instance.GetCurrentTurnUnit());
+        }
     }
 
     public void CheckGameOver(FallArg arg)
     {
-        if (Helper.GetLivingUnits(UnitManager.instance.GetAllUnits()).Count == 0)
+        List<PlayerAccount> playersStillInTheGame = PlayerManager.instance.GetPlayersStillInTheGame();
+        foreach (PlayerAccount player in playersStillInTheGame)
+        {
+            CheckGameOverForPlayer(player);
+        }
+
+        List<PlayerAccount> playersStillInTheGameAfterElimination = PlayerManager.instance.GetPlayersStillInTheGame();
+        if (playersStillInTheGameAfterElimination.Count <= 1)
         {
             ChangeState(GameState.GameOver);
         }
     }
 
+    public void CheckGameOverForPlayer(PlayerAccount player)
+    {
+        List<Character> characters = PlayerManager.instance.GetAllAllyCharacters(player);
+        bool anyAlive = characters.Any(character => character.IsAlive());
+
+        if (!anyAlive)
+        {
+            player.Eliminate();
+        }
+    }
+
+
+    public bool IsValidTarget(GameObject target)
+    {
+        return target != null && 
+            InputManager.instance.GetPositionsWithinRange().Contains(GridManager.instance.GetCellPositionOfGameObject(target));
+    }
 
 
     public void ExecuteSelectedAbility()
@@ -116,10 +171,10 @@ public class GameManager : Singleton<GameManager>
         Ability abilityToExecute = InputManager.instance.GetSelectedAbility();
         GameObject target = InputManager.instance.GetSelectedObject();
         Unit currentUnitTurn = TurnManager.instance.GetCurrentTurnUnit();
-        if (target != null && abilityToExecute != null)
+        if (IsValidTarget(target) && abilityToExecute != null)
         {
             InputManager.instance.SetSelectedAbility(null);
-            abilityToExecute.QueueAbility(currentUnitTurn, target);
+            abilityToExecute.CommitAbility(currentUnitTurn, target);
             ChangeState(GameState.UnitTurnEnd);
         }
     }

@@ -9,9 +9,12 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7647826074788716550}
+  - component: {fileID: 113825693053429732}
   - component: {fileID: 5308636598545374710}
   - component: {fileID: 8517074501129820671}
-  - component: {fileID: 113825693053429732}
+  - component: {fileID: 5684767538875104911}
+  - component: {fileID: -4970732939783303503}
+  - component: {fileID: -2222762310530107636}
   m_Layer: 7
   m_Name: Jibblon
   m_TagString: Untagged
@@ -34,6 +37,30 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &113825693053429732
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5409148526395176936}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 41437c1a168f599428252fde9885bb53, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _currentPosition: {x: 0, y: 0, z: 0}
+  _moveableStats:
+    Weight: 0
+    IsOnGrid: 0
+  _unitStats:
+    Alive: 0
+    Speed: 0
+    Strength: 0
+    DestructivePower: 0
+    DamageDealt: 0
+  CharacterStats:
+    Example: 0
 --- !u!212 &5308636598545374710
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -157,7 +184,7 @@ PolygonCollider2D:
       - {x: 0.14, y: 0.08}
       - {x: 0.16, y: 0.07}
   m_UseDelaunayMesh: 0
---- !u!114 &113825693053429732
+--- !u!114 &5684767538875104911
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -166,10 +193,31 @@ MonoBehaviour:
   m_GameObject: {fileID: 5409148526395176936}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 41437c1a168f599428252fde9885bb53, type: 3}
+  m_Script: {fileID: 11500000, guid: 455254112b1e224479647595c3eb339b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _moveableStats:
-    Weight: 0
-  CharacterStats:
-    Example: 0
+  _fadeTime: 0.5
+--- !u!114 &-4970732939783303503
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5409148526395176936}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a74d5b6e6c044940873636e97d3296d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &-2222762310530107636
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5409148526395176936}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e7437c5390061e843b86d49c9fdc818e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

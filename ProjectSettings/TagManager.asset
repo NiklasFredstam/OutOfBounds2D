@@ -12,7 +12,7 @@ TagManager:
   - Water
   - UI
   - Grid
-  - Characters
+  - Moveable
   - 
   - 
   - 
@@ -47,7 +47,7 @@ TagManager:
   - name: Grid
     uniqueID: 950120125
     locked: 0
-  - name: Characters
+  - name: Moveable
     uniqueID: 306460689
     locked: 0
   m_RenderingLayers:

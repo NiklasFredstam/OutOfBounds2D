@@ -1,3 +1,4 @@
+using NUnit.Framework;
 using System;
 using UnityEngine;
 using UnityEngine.Events;
@@ -17,7 +18,18 @@ public class EventManager : Singleton<EventManager>
 
     public GameEvent<MoveArg> GE_Move = new("Move");
 
-     
+    public GameEvent<PushArg> GE_Push = new("Push");
+
+    public GameEvent<GetPushedArg> GE_GetPushed = new("Get Pushed");
+
+    public GameEvent<MovedToArg> GE_MovedToArg = new("Moved To Arg");
+
+    //UI Events
+
+    public UIEvent<TargettableArg> UI_Targettable = new("Targettable");
+    public UIEvent<SelectArg> UI_Select = new("Select");
+    public UIEvent<HoverArg> UI_Hover = new("Hover");
+
     public void ClearGameEvents()
     {
         GE_DoDamage.Clear();
@@ -26,5 +38,9 @@ public class EventManager : Singleton<EventManager>
         GE_UseAbility.Clear();
         GE_Fall.Clear();
         GE_Move.Clear();
+        GE_Push.Clear();
+        GE_GetPushed.Clear();
+
+        UI_Targettable.Clear();
     }
 }

@@ -9,14 +9,6 @@ public class HexTileScriptable : ScriptableObject
     public HexTile Prefab;
     public TileType TileType;
 }
-[Serializable]
-public struct TileStats
-{
-    public int BaseHealth;
-    public int CurrentHealth;
-    public int MovementReduction;
-}
-
 public enum TileType
 {
     Stone

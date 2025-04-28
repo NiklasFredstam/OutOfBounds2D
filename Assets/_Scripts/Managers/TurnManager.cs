@@ -12,23 +12,23 @@ public class TurnManager : Singleton<TurnManager>
     private List<Unit> _unitTurnOrder = new();
     [SerializeField]
     private Unit _currentTurnUnit;
-
+    private PlayerAccount _currentTurnPlayer;
 
     public void OnBeforeGameStateChanged(GameState gameState)
     {
-        
-        switch(gameState)
+        UpdateUnitTurnOrder();
+        switch (gameState)
         {
             case GameState.GameTurnStart:
-                UpdateUnitTurnOrder();
                 break;
             case GameState.UnitTurnStart:
-                UpdateUnitTurnOrder();
                 SetCurrentTurnUnit();
+                SetCurrentTurnPlayer();
                 break;
             case GameState.UnitTurnEnd:
                 _unitsAlreadyTakenTurn.Add(_currentTurnUnit);
                 _currentTurnUnit = null;
+                _currentTurnPlayer = null;
                 break;
             case GameState.GameTurnEnd:
                 _unitsAlreadyTakenTurn.Clear();
@@ -41,7 +41,7 @@ public class TurnManager : Singleton<TurnManager>
 
     public bool IsGameTurnOver()
     {
-        foreach(Unit unit in _unitTurnOrder)
+        foreach(Unit unit in MoveableManager.instance.GetLivingUnits())
         {
             if(!_unitsAlreadyTakenTurn.Contains(unit))
             {
@@ -62,15 +62,29 @@ public class TurnManager : Singleton<TurnManager>
         return _gameTurnCounter;
     }
 
-    private void UpdateUnitTurnOrder()
+    public bool ControlsCurrentTurnUnit()
     {
-        _unitTurnOrder = Helper.GetLivingUnits(UnitManager.instance.GetAllUnits()).OrderBy(unit => unit.GetSpeed()).ToList();
+        return _currentTurnPlayer.IsLocalPlayer && _currentTurnUnit.GetControllingPlayer() == _currentTurnPlayer;
+    }
+
+    public bool IsAllowedToMoveUnit(Unit unit)
+    {
+        return unit.GetControllingPlayer().IsLocalPlayer && ControlsCurrentTurnUnit();
+    }
+
+    public void UpdateUnitTurnOrder()
+    {
+        _unitTurnOrder = MoveableManager.instance.GetLivingUnits().OrderBy(unit => unit.GetSpeed()).ToList();
     }
 
     private void SetCurrentTurnUnit()
     {
-
         _currentTurnUnit = _unitTurnOrder.FirstOrDefault(unit => !_unitsAlreadyTakenTurn.Contains(unit));
+    }
+
+    private void SetCurrentTurnPlayer()
+    {
+        _currentTurnPlayer = _currentTurnUnit.GetControllingPlayer();
     }
 
 }
